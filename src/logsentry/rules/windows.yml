@@ -62,7 +62,7 @@ match:
 ---
 id: LS-WIN-006
 title: Account added to administrators
-description: Account added to a privileged group (4732/4728).
+description: Account added to a privileged group (4728/4732/4756).
 severity: high
 mitre: [T1098]
 source: windows

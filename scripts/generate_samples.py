@@ -147,7 +147,9 @@ def windows_log() -> list[str]:
     add(t + timedelta(minutes=2), 4688, SubjectUserName="Administrator", NewProcessName="C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
         CommandLine="powershell.exe -nop -w hidden -enc SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkA")
     add(t + timedelta(minutes=3), 4720, SubjectUserName="Administrator", TargetUserName="svc_backup")
-    add(t + timedelta(minutes=3, seconds=10), 4732, SubjectUserName="Administrator", TargetUserName="svc_backup", TargetGroupName="Administrators")
+    # real 4732 schema: TargetUserName is the group, MemberSid/MemberName the account added
+    add(t + timedelta(minutes=3, seconds=10), 4732, SubjectUserName="Administrator", TargetUserName="Administrators",
+        MemberName="-", MemberSid="S-1-5-21-1004336348-1177238915-682003330-1003")
     add(t + timedelta(minutes=5), 7045, ServiceName="WinUpdateHelper")
     add(t + timedelta(minutes=9), 1102, SubjectUserName="Administrator")
 

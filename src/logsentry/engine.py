@@ -25,8 +25,17 @@ from .rules import SEVERITIES, Rule
 MAX_EVIDENCE = 20
 
 
-def _group_key(rule: Rule, ev: Event) -> str | None:
-    return None if not rule.group_by else str(ev.get(rule.group_by, "?"))
+_MISSING = object()
+
+
+def _group_key(rule: Rule, ev: Event):
+    """Group value for ``ev``, None for ungrouped rules, or _MISSING when the
+    event lacks the field (e.g. a console logon with no IP). Missing-key events
+    are skipped so unrelated events never pile up in one bogus group."""
+    if not rule.group_by:
+        return None
+    value = ev.get(rule.group_by)
+    return _MISSING if value is None else str(value)
 
 
 def _new_alert(rule: Rule, group: str | None, events: list[Event]) -> Alert:
@@ -59,6 +68,8 @@ def _run_windowed(rule: Rule, events: list[Event], threshold: int) -> list[Alert
             continue
 
         key = _group_key(rule, ev)
+        if key is _MISSING:
+            continue
         current = active.get(key)
         # still inside an ongoing burst: fold into the existing alert
         if current and ev.timestamp - current.last_seen <= rule.window:
@@ -91,6 +102,8 @@ def _run_sequence(rule: Rule, events: list[Event]) -> list[Alert]:
 
     for ev in events:
         key = _group_key(rule, ev)
+        if key is _MISSING:
+            continue
         buckets = state[key]
         for bucket in buckets:
             while bucket and ev.timestamp - bucket[0].timestamp > rule.window:

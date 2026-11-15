@@ -23,16 +23,24 @@ jobs:
       - name: Scan the sample logs
         run: logsentry scan samples/auth.log samples/access.log samples/windows_security.jsonl --year 2026 --output markdown
 
-  # Example of using LogSentry as a CI security gate: fails the job if a
-  # critical finding exists. The samples contain planted attacks, so this
-  # job is expected to report exit code 1 and is marked continue-on-error.
+  # Security-gate demo using a regular (non-editable) install. The samples
+  # contain planted critical attacks, so `--fail-on critical` must exit
+  # exactly 1. Exit 0 (missed detections) or 2 (crash, e.g. rules not
+  # packaged) fails the job.
   gate-demo:
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - run: pip install .
-      - run: logsentry scan samples/*.log samples/*.jsonl --year 2026 --fail-on critical
+      - name: Gate must trip on planted criticals
+        shell: bash
+        run: |
+          cd /tmp   # make sure the installed package, not the source tree, is used
+          set +e
+          logsentry scan "$GITHUB_WORKSPACE"/samples/*.log "$GITHUB_WORKSPACE"/samples/*.jsonl --year 2026 --fail-on critical
+          code=$?
+          echo "exit code: $code"
+          test "$code" -eq 1

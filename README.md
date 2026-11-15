@@ -41,7 +41,7 @@ brute force → account compromise → root shell → backdoor user → added to
 
 - **3 log formats**, auto-detected: Linux `auth.log` (sshd / sudo / useradd / usermod),
   Apache/Nginx combined access logs, and Windows Security/System events exported as JSON lines.
-- **22 built-in detection rules** covering 18 MITRE ATT&CK techniques and sub-techniques. Each rule is a small YAML file.
+- **22 built-in detection rules** covering 17 MITRE ATT&CK techniques and sub-techniques (13 parent techniques). Each rule is a small YAML file.
 - **3 rule types:**
   - `pattern`: one event is enough (SQLi payload, log cleared, encoded PowerShell)
   - `threshold`: N events, or N *distinct* values, per group in a sliding time window (brute force, password spraying, directory busting)
@@ -50,7 +50,7 @@ brute force → account compromise → root shell → backdoor user → added to
 - **Reports** as coloured terminal output, JSON (for SIEM/SOAR pipelines) or Markdown (for tickets and incident write-ups).
 - **CI-friendly exit codes**: `--fail-on high` exits `1` when findings reach that severity.
 - **One dependency** (PyYAML); the rest is plain standard-library Python.
-- **52 unit and end-to-end tests**, run on Linux and Windows through GitHub Actions.
+- **67 unit and end-to-end tests**, run on Linux and Windows through GitHub Actions.
 
 ## Detection coverage
 
@@ -65,7 +65,7 @@ brute force → account compromise → root shell → backdoor user → added to
 | LS-AUTH-007 | User added to privileged group | pattern | high | T1098 |
 | LS-WEB-001 | SQL injection attempt | pattern | high | T1190 |
 | LS-WEB-002 | Path traversal / LFI | pattern | high | T1190, T1083 |
-| LS-WEB-003 | Cross-site scripting attempt | pattern | medium | T1059.007 |
+| LS-WEB-003 | Cross-site scripting attempt | pattern | medium | T1190 |
 | LS-WEB-004 | Known vulnerability scanner (sqlmap, nikto, gobuster…) | pattern | medium | T1595.002 |
 | LS-WEB-005 | Directory / content brute forcing | threshold | medium | T1595.003 |
 | LS-WEB-006 | Possible web shell access | pattern | critical | T1505.003 |
@@ -86,6 +86,9 @@ git clone https://github.com/lonewalkeryash/logsentry.git
 cd logsentry
 pip install -e ".[dev]"
 ```
+
+If your shell says `logsentry: command not found` (pip's script folder isn't on `PATH`),
+use `python -m logsentry` instead. It takes the same arguments.
 
 ## Usage
 
@@ -192,7 +195,7 @@ mix normal traffic with planted attacks. All IPs come from the RFC 5737
 documentation ranges and every user and host name is made up.
 
 ```bash
-pytest -v                          # 52 tests: parsers, engine logic, end-to-end on the samples
+pytest -v                          # 67 tests: parsers, engine logic, end-to-end on the samples
 python scripts/generate_samples.py # regenerate the samples
 python scripts/benchmark.py        # throughput on a 200k-line synthetic auth log
 ```
@@ -200,7 +203,7 @@ python scripts/benchmark.py        # throughput on a 200k-line synthetic auth lo
 The end-to-end tests check that **every planted attack is detected** and that **no alert
 fires on the benign 192.0.2.0/24 hosts**. The only exception is the deliberate root-login misconfiguration.
 
-Benchmark on a laptop (Python 3.14, Windows 11): 200,000 lines parsed and checked against all 22 rules in about 3.1 s, around 64,000 lines/sec.
+Benchmark on a laptop (Python 3.14, Windows 11): 200,000 lines parsed and checked against all 22 rules in about 3.5 s, around 55,000 lines/sec.
 
 ## Roadmap
 
