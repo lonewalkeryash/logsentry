@@ -14,6 +14,9 @@ Safety model
   passed with ``--allow`` are never blocked.
 * **Bounded.** ``--max-blocks`` caps how many addresses can be blocked at once,
   and every block expires after ``--block-ttl`` (default 24h).
+* **Preview changes nothing**, not even expiry. With ``--apply``, blocks recorded
+  in the state file are re-applied on start (firewall rules don't survive a reboot),
+  and the file is re-read before every change so a manual ``unblock`` sticks.
 
 Backends: ``iptables`` (Linux, rules live in a dedicated ``LOGSENTRY`` chain so
 they are easy to inspect and flush) and ``netsh`` (Windows Defender Firewall,
@@ -205,6 +208,10 @@ class BlockState:
 
     def __init__(self, path: Path | None = None) -> None:
         self.path = Path(path) if path else default_state_path()
+        self.reload()
+
+    def reload(self) -> None:
+        """Re-read the file, so blocks lifted by another process (`logsentry unblock`) are seen."""
         self.blocks: dict[str, dict] = {}
         if self.path.exists():
             try:
@@ -244,7 +251,7 @@ class Responder:
         min_severity: str = "high",
         allow: Iterable[str] = (),
         ttl: timedelta | None = timedelta(hours=24),
-        max_blocks: int = 50,
+        max_blocks: int = 500,
         state: BlockState | None = None,
         run: Runner = default_runner,
         clock: Callable[[], float] = time.time,
@@ -265,7 +272,7 @@ class Responder:
         me = ssh_client_ip()
         if me:
             self.allow.append(ipaddress.ip_network(me))
-        self._planned: set[str] = set()  # dry-run: what we would have blocked this run
+        self._planned: dict[str, float | None] = {}  # preview: ip -> when the pretend block expires
 
     def _say(self, msg: str) -> None:
         print(msg, file=self.out, flush=True)
@@ -276,7 +283,31 @@ class Responder:
     def _active_count(self) -> int:
         return len(self.state.blocks) + len(self._planned)
 
+    def restore(self) -> list[str]:
+        """Re-apply unexpired blocks from the state file (firewall rules don't survive a reboot)."""
+        if not self.apply:
+            return []
+        self.state.reload()
+        now, restored = self.clock(), []
+        for key, rec in self.state.blocks.items():
+            if rec.get("expires_at") is not None and rec["expires_at"] <= now:
+                continue  # expire() will lift it
+            ip = parse_ip(key)
+            if ip is None:
+                continue
+            backend = get_backend(rec["backend"]) if rec.get("backend") else self.backend
+            try:
+                backend.block(ip, self.run)
+                restored.append(key)
+            except BlockError as exc:
+                self._say(f"[error]   could not restore block on {key}: {exc}")
+        if restored:
+            self._say(f"[restore] re-applied {len(restored)} block(s) from {self.state.path}")
+        return restored
+
     def handle(self, alerts: Iterable[Alert]) -> list[Decision]:
+        if self.apply:
+            self.state.reload()
         decisions = []
         for alert in alerts:
             d = self._decide(alert)
@@ -307,7 +338,7 @@ class Responder:
         now = self.clock()
         expires = now + self.ttl.total_seconds() if self.ttl else None
         if not self.apply:
-            self._planned.add(key)
+            self._planned[key] = expires
             cmd = " ".join(self.backend.block_cmd(ip))
             self._say(f"[preview] would block {key} for {tag}\n          $ {cmd}")
             return Decision("would-block", key, alert)
@@ -325,8 +356,14 @@ class Responder:
         return Decision("blocked", key, alert)
 
     def expire(self) -> list[str]:
-        """Lift blocks whose TTL has passed. Returns the IPs unblocked."""
+        """Lift blocks whose TTL has passed. Returns the IPs unblocked.
+
+        In preview mode nothing is touched: only the pretend blocks are forgotten."""
         now = self.clock()
+        if not self.apply:
+            self._planned = {k: v for k, v in self._planned.items() if v is None or v > now}
+            return []
+        self.state.reload()
         done = []
         for key, rec in list(self.state.blocks.items()):
             if rec.get("expires_at") is not None and rec["expires_at"] <= now:
@@ -340,6 +377,7 @@ class Responder:
         if ip is None:
             raise BlockError(f"{value!r} is not an IP address")
         key = str(ip)
+        self.state.reload()
         rec = self.state.blocks.get(key)
         backend = get_backend(rec["backend"]) if rec and rec.get("backend") else self.backend
         try:

@@ -67,7 +67,7 @@ jobs:
           sleep 3
           systemctl is-active logsentry
           sudo tee -a /var/log/ls-ci.log < samples/auth.log > /dev/null
-          for i in $(seq 1 20); do sudo iptables -C LOGSENTRY -s 203.0.113.45 -j DROP 2>/dev/null && break; sleep 1; done
+          for i in $(seq 1 20); do sudo iptables -C LOGSENTRY -s 198.51.100.23 -j DROP 2>/dev/null && break; sleep 1; done
           sudo journalctl -u logsentry --no-pager | tail -n 30
           sudo iptables -S LOGSENTRY
           sudo iptables -C LOGSENTRY -s 203.0.113.45 -j DROP     # brute force -> blocked
@@ -80,6 +80,30 @@ jobs:
           if sudo iptables -C LOGSENTRY -s 203.0.113.45 -j DROP 2>/dev/null; then echo "still blocked"; exit 1; fi
           sudo ./deploy/install.sh --uninstall
           if sudo iptables -n -L LOGSENTRY >/dev/null 2>&1; then echo "chain left behind"; exit 1; fi
+
+  # Real auto-block on Windows Defender Firewall (runners are Administrator).
+  windows-firewall:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: pip install .
+      - name: Block, verify, unblock
+        shell: pwsh
+        run: |
+          $state = "$env:RUNNER_TEMP/blocks.json"
+          logsentry scan samples/windows_security.jsonl --year 2026 --block --apply --firewall netsh --state $state -o json --out "$env:RUNNER_TEMP/r.json"
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          netsh advfirewall firewall show rule name=LogSentry-block-203.0.113.200
+          if ($LASTEXITCODE -ne 0) { throw "rule for 203.0.113.200 not created" }
+          logsentry blocks --state $state
+          logsentry unblock 203.0.113.200 198.51.100.66 --state $state
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          netsh advfirewall firewall show rule name=LogSentry-block-203.0.113.200 | Out-Null
+          if ($LASTEXITCODE -eq 0) { throw "rule still present after unblock" }
+          exit 0
 
   docker:
     runs-on: ubuntu-latest

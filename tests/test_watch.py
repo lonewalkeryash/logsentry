@@ -106,3 +106,17 @@ def test_watch_blocks_attacker(tmp_path):
 def test_watch_rejects_windows_format(tmp_path):
     with pytest.raises(ValueError):
         Watcher([tmp_path / "x"], "windows", load_rules())
+
+
+def test_watch_blocks_on_fifth_failed_password(tmp_path):
+    log = tmp_path / "auth.log"
+    log.write_text("")
+    r = Responder(IptablesBackend(), apply=False, state=BlockState(tmp_path / "s.json"),
+                  run=lambda c: (0, ""), out=io.StringIO())
+    w, _ = watcher(log, responder=r)
+    for n, line in enumerate(SAMPLE, start=1):
+        append(log, [line])
+        w.poll()
+        if "would block 203.0.113.45" in r.out.getvalue():
+            break
+    assert n == 5                                # LS-AUTH-001 threshold: 5 failures

@@ -58,7 +58,7 @@ brute force → account compromise → root shell → backdoor user → added to
 - **Easy deploy**: `pip install`, a standalone executable with no Python needed, a Docker image, or a
   one-command systemd service installer.
 - **One dependency** (PyYAML); the rest is plain standard-library Python.
-- **101 unit and end-to-end tests**, run on Linux and Windows through GitHub Actions. CI also installs the
+- **106 unit and end-to-end tests**, run on Linux and Windows through GitHub Actions. CI also installs the
   service on a real Linux runner and checks that iptables actually blocks the attackers.
 
 ## Detection coverage
@@ -153,9 +153,9 @@ sudo logsentry unblock --expired
 [block]   203.0.113.45 blocked via iptables for LS-AUTH-001 SSH brute force (expires 2026-11-16 08:14)
 ```
 
-Replaying the sample SSH attack through `watch`, the brute-force rule fires at
-the 6th failed password. With `--apply` the attacker is cut off there, 9 guesses
-before the one that actually got in.
+Replaying the sample SSH attack through `watch`, the brute-force rule fires on
+the 5th failed password. With `--apply` the attacker is cut off there; in the
+sample they needed 15 attempts to get in.
 
 | Firewall | Option | What it does |
 |---|---|---|
@@ -177,7 +177,12 @@ thing is a liability, so:
   CGNAT ranges, the IP of the SSH session you're running it from, and anything
   passed with `--allow` are never blocked.
 - **Bounded.** Blocks expire after `--block-ttl` (default `24h`; `0` = never),
-  and at most `--max-blocks` (default 50) can be active at once.
+  and at most `--max-blocks` (default 500) can be active at once. On a busy
+  internet-facing server, raise it or shorten the TTL.
+- **Survives restarts.** Firewall rules are lost on reboot, so with `--apply`
+  unexpired blocks from the state file are re-applied when LogSentry starts.
+  The state file is re-read before every change, so a manual `unblock` sticks
+  even while the service is running.
 - **Tunable.** `--block-severity critical` blocks only confirmed compromises
   (e.g. a successful login after brute force).
 - **Auditable.** Every block is recorded in a JSON state file
@@ -217,6 +222,10 @@ docker compose up -d                                                            
 Detection needs no privileges. To block, the container must share the host's
 network namespace and have `NET_ADMIN`; [`docker-compose.yml`](docker-compose.yml)
 sets that up in preview mode (add `--apply` to the command to enforce).
+
+> Blocks go in the host's `INPUT` chain, which protects services running on the
+> host (like SSH). Ports published by *other* Docker containers are routed
+> through `FORWARD` and `DOCKER-USER` instead, so they are not covered.
 
 ### Windows
 
@@ -330,7 +339,7 @@ mix normal traffic with planted attacks. All IPs come from the RFC 5737
 documentation ranges and every user and host name is made up.
 
 ```bash
-pytest -v                          # 101 tests: parsers, engine, live watch, auto-block, end-to-end
+pytest -v                          # 106 tests: parsers, engine, live watch, auto-block, end-to-end
 python scripts/generate_samples.py # regenerate the samples
 python scripts/benchmark.py        # throughput on a 200k-line synthetic auth log
 ```

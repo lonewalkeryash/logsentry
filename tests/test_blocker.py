@@ -185,3 +185,46 @@ def test_cli_apply_requires_block():
 def test_cli_blocks_empty(tmp_path, capsys):
     assert main(["blocks", "--state", str(tmp_path / "none.json")]) == 0
     assert "no active blocks" in capsys.readouterr().out
+
+
+def test_preview_never_touches_firewall_even_to_expire(tmp_path):
+    state = BlockState(tmp_path / "s.json")
+    state.blocks["203.0.113.9"] = {"backend": "iptables", "expires_at": 1.0}
+    state.save()
+    fw = FakeFirewall()
+    r = Responder(IptablesBackend(), apply=False, state=BlockState(tmp_path / "s.json"), run=fw,
+                  out=io.StringIO(), clock=lambda: 10.0)
+    assert r.expire() == [] and r.restore() == []
+    assert fw.calls == []
+    assert "203.0.113.9" in BlockState(tmp_path / "s.json").blocks
+
+
+def test_preview_pretend_blocks_expire_so_cap_frees_up(tmp_path):
+    now = [0.0]
+    r = responder(tmp_path, apply=False, max_blocks=1, ttl=timedelta(minutes=10), clock=lambda: now[0])
+    assert r.handle([alert(group="203.0.113.1")])[0].action == "would-block"
+    assert r.handle([alert(group="203.0.113.2")])[0].reason == "max-blocks"
+    now[0] += 601
+    r.expire()
+    assert r.handle([alert(group="203.0.113.2")])[0].action == "would-block"
+
+
+def test_restore_reapplies_blocks_after_reboot(tmp_path):
+    r = responder(tmp_path, run=FakeFirewall())
+    r.handle([alert()])
+    rebooted = FakeFirewall()                     # empty firewall, state file still there
+    r2 = responder(tmp_path, run=rebooted)
+    assert r2.restore() == ["203.0.113.45"]
+    assert ("LOGSENTRY", "-s", "203.0.113.45", "-j", "DROP") in rebooted.rules
+
+
+def test_manual_unblock_is_not_overwritten_by_running_service(tmp_path):
+    fw = FakeFirewall()
+    service = responder(tmp_path, run=fw)
+    service.handle([alert(group="203.0.113.45")])
+    admin = responder(tmp_path, run=fw)           # separate `logsentry unblock` process
+    assert admin.unblock("203.0.113.45")
+    service.handle([alert(group="198.51.100.23")])  # service saves state again
+    assert set(BlockState(tmp_path / "s.json").blocks) == {"198.51.100.23"}
+    # and if the same attacker comes back, it is blocked again
+    assert service.handle([alert(group="203.0.113.45")])[0].action == "blocked"

@@ -37,10 +37,13 @@ def _responder(args) -> Responder | None:
     if not args.block:
         return None
     ttl = parse_window(args.block_ttl) if args.block_ttl not in ("0", "never") else None
-    return Responder(
+    responder = Responder(
         get_backend(args.firewall), apply=args.apply, min_severity=args.block_severity,
         allow=args.allow or [], ttl=ttl, max_blocks=args.max_blocks, state=BlockState(args.state),
     )
+    responder.expire()
+    responder.restore()
+    return responder
 
 
 def cmd_scan(args) -> int:
@@ -63,7 +66,6 @@ def cmd_scan(args) -> int:
         print(rendered)
 
     if responder:
-        responder.expire()
         responder.handle(alerts)
 
     if args.fail_on:
@@ -145,7 +147,7 @@ def build_parser() -> argparse.ArgumentParser:
                    help="never block this IP/network (repeatable); private ranges are always allowed")
     g.add_argument("--block-ttl", default="24h", metavar="DURATION",
                    help="lift blocks after this long, e.g. 30m, 24h, 7d; 0 = never (default: 24h)")
-    g.add_argument("--max-blocks", type=int, default=50, help="cap on active blocks (default: 50)")
+    g.add_argument("--max-blocks", type=int, default=50, help="cap on active blocks (default: 500)")
     state = argparse.ArgumentParser(add_help=False)
     state.add_argument("--state", metavar="FILE",
                        help="block state file (default: $LOGSENTRY_STATE or ~/.logsentry/blocks.json)")
