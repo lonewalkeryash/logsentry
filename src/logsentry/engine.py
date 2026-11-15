@@ -43,7 +43,7 @@ def _new_alert(rule: Rule, group: str | None, events: list[Event]) -> Alert:
         rule_id=rule.id, title=rule.title, severity=rule.severity, mitre=rule.mitre,
         description=rule.description, group=group,
         first_seen=events[0].timestamp, last_seen=events[-1].timestamp,
-        count=len(events), evidence=list(events[:MAX_EVIDENCE]),
+        count=len(events), evidence=list(events[:MAX_EVIDENCE]), group_by=rule.group_by,
     )
 
 

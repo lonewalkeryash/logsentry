@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "logsentry"
-version = "0.1.0"
-description = "Rule-based log threat detection: parse auth, web and Windows logs and flag attacks mapped to MITRE ATT&CK."
+version = "0.2.0"
+description = "Log threat detection and response: flag attacks in auth, web and Windows logs (mapped to MITRE ATT&CK), follow logs live, and auto-block attacker IPs."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
 dependencies = ["PyYAML>=6.0"]
-keywords = ["security", "blue-team", "detection", "siem", "mitre-attack", "log-analysis"]
+keywords = ["security", "blue-team", "detection", "siem", "mitre-attack", "log-analysis", "intrusion-prevention", "fail2ban", "firewall"]
 classifiers = [
     "Programming Language :: Python :: 3",
     "Topic :: Security",

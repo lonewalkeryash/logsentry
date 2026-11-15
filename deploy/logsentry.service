@@ -1,0 +1,29 @@
+[Unit]
+Description=LogSentry live log threat detection and auto-block
+Documentation=https://github.com/lonewalkeryash/logsentry
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/logsentry/logsentry.env
+Environment=LOGSENTRY_STATE=/var/lib/logsentry/blocks.json PYTHONUNBUFFERED=1
+ExecStart=/opt/logsentry/bin/logsentry watch $LOGSENTRY_ARGS
+Restart=on-failure
+RestartSec=5
+StateDirectory=logsentry
+
+# Hardening: runs as root only so it can manage the firewall, with every other
+# root power removed.
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_RAW CAP_DAC_READ_SEARCH
+NoNewPrivileges=yes
+ProtectSystem=strict
+ReadWritePaths=/run
+ProtectHome=yes
+PrivateTmp=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+
+[Install]
+WantedBy=multi-user.target

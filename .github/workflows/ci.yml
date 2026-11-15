@@ -44,3 +44,79 @@ jobs:
           code=$?
           echo "exit code: $code"
           test "$code" -eq 1
+
+  # Real auto-block on a real Linux firewall: install as a systemd service,
+  # feed it a live log, and check iptables actually holds the blocks.
+  service-autoblock:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install as a systemd service
+        run: sudo ./deploy/install.sh
+      - name: One-shot scan with --block --apply
+        run: |
+          sudo logsentry scan samples/windows_security.jsonl --year 2026 --block --apply --firewall iptables --state /tmp/scan-state.json -o json --out /tmp/report.json
+          sudo iptables -C LOGSENTRY -s 203.0.113.200 -j DROP
+          sudo logsentry unblock 203.0.113.200 198.51.100.66 --state /tmp/scan-state.json
+          if sudo iptables -C LOGSENTRY -s 203.0.113.200 -j DROP 2>/dev/null; then echo "still blocked"; exit 1; fi
+      - name: Live watch blocks the attacker
+        run: |
+          echo 'LOGSENTRY_ARGS=/var/log/ls-ci.log --format auth --year 2026 --block --apply --firewall iptables' | sudo tee /etc/logsentry/logsentry.env
+          sudo touch /var/log/ls-ci.log
+          sudo systemctl restart logsentry
+          sleep 3
+          systemctl is-active logsentry
+          sudo tee -a /var/log/ls-ci.log < samples/auth.log > /dev/null
+          for i in $(seq 1 20); do sudo iptables -C LOGSENTRY -s 203.0.113.45 -j DROP 2>/dev/null && break; sleep 1; done
+          sudo journalctl -u logsentry --no-pager | tail -n 30
+          sudo iptables -S LOGSENTRY
+          sudo iptables -C LOGSENTRY -s 203.0.113.45 -j DROP     # brute force -> blocked
+          sudo iptables -C LOGSENTRY -s 198.51.100.23 -j DROP    # password spraying -> blocked
+          if sudo iptables -C LOGSENTRY -s 192.0.2.50 -j DROP 2>/dev/null; then echo "benign host blocked"; exit 1; fi
+          sudo logsentry blocks --state /var/lib/logsentry/blocks.json
+      - name: Unblock and uninstall cleanly
+        run: |
+          sudo logsentry unblock 203.0.113.45 --state /var/lib/logsentry/blocks.json
+          if sudo iptables -C LOGSENTRY -s 203.0.113.45 -j DROP 2>/dev/null; then echo "still blocked"; exit 1; fi
+          sudo ./deploy/install.sh --uninstall
+          if sudo iptables -n -L LOGSENTRY >/dev/null 2>&1; then echo "chain left behind"; exit 1; fi
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: docker build -t logsentry .
+      - name: Scan the samples inside the container
+        run: |
+          set +e
+          docker run --rm -v "$PWD/samples:/logs:ro" logsentry scan /logs/auth.log /logs/access.log /logs/windows_security.jsonl --year 2026 --fail-on critical
+          code=$?
+          echo "exit code: $code"
+          test "$code" -eq 1
+      - run: docker compose config -q
+
+  # Standalone executable (Python + dependencies bundled), Linux and Windows.
+  binary:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: pip install . pyinstaller
+      - run: bash packaging/build_binary.sh
+        shell: bash
+      - name: Smoke-test the binary
+        shell: bash
+        run: |
+          ./dist/logsentry --version
+          ./dist/logsentry rules | tail -n 1 | grep -q "22 rules loaded"
+          set +e
+          ./dist/logsentry scan samples/auth.log samples/access.log samples/windows_security.jsonl --year 2026 --fail-on critical
+          code=$?
+          echo "exit code: $code"
+          test "$code" -eq 1

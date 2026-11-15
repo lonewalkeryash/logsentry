@@ -49,6 +49,7 @@ class Alert:
     last_seen: datetime
     count: int
     evidence: list[Event] = field(default_factory=list)
+    group_by: str | None = None  # field the group value came from, e.g. "src_ip"
 
     def to_dict(self, max_evidence: int = 5) -> dict[str, Any]:
         return {
@@ -58,6 +59,7 @@ class Alert:
             "mitre": self.mitre,
             "description": self.description,
             "group": self.group,
+            "group_by": self.group_by,
             "first_seen": self.first_seen.isoformat(),
             "last_seen": self.last_seen.isoformat(),
             "count": self.count,

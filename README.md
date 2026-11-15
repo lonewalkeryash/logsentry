@@ -4,13 +4,16 @@
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-**A lightweight, rule-based threat detection engine for security logs.**
+**A lightweight threat detection and response tool for security logs.**
 LogSentry reads Linux auth logs, web server access logs and Windows Security
 events, runs them through YAML detection rules mapped to **MITRE ATT&CK**, and
 reports attacks like brute force, password spraying, SQL injection, web shells,
-privilege escalation and log tampering.
+privilege escalation and log tampering. It can follow logs live and
+**automatically block the attacking IP** at the host firewall (iptables or
+Windows Defender Firewall).
 
-You can think of it as a tiny SIEM correlation engine you run from the command line.
+You can think of it as a tiny SIEM correlation engine plus a fail2ban-style
+responder, run from the command line or as a service.
 
 ```
 $ logsentry scan samples/auth.log
@@ -49,8 +52,14 @@ brute force → account compromise → root shell → backdoor user → added to
 - **Burst de-duplication:** a 5,000-line brute force produces one alert, not 1,000.
 - **Reports** as coloured terminal output, JSON (for SIEM/SOAR pipelines) or Markdown (for tickets and incident write-ups).
 - **CI-friendly exit codes**: `--fail-on high` exits `1` when findings reach that severity.
+- **Live monitoring**: `logsentry watch` follows growing logs, survives log rotation, and alerts within a second.
+- **Auto-block**: blocks the source IP of high-severity attacks with iptables or `netsh`, with a preview mode,
+  allowlist, block expiry and a cap on active blocks so it can't lock you out.
+- **Easy deploy**: `pip install`, a standalone executable with no Python needed, a Docker image, or a
+  one-command systemd service installer.
 - **One dependency** (PyYAML); the rest is plain standard-library Python.
-- **67 unit and end-to-end tests**, run on Linux and Windows through GitHub Actions.
+- **101 unit and end-to-end tests**, run on Linux and Windows through GitHub Actions. CI also installs the
+  service on a real Linux runner and checks that iptables actually blocks the attackers.
 
 ## Detection coverage
 
@@ -81,11 +90,15 @@ brute force → account compromise → root shell → backdoor user → added to
 
 ## Install
 
-```bash
-git clone https://github.com/lonewalkeryash/logsentry.git
-cd logsentry
-pip install -e ".[dev]"
-```
+Pick whichever suits you. Every option brings its own dependencies.
+
+| Option | Command | Needs |
+|---|---|---|
+| **pip / pipx** | `pipx install git+https://github.com/lonewalkeryash/logsentry.git` | Python 3.10+ |
+| **Standalone executable** | download `logsentry-linux-x86_64` or `logsentry-windows-x86_64.exe` from [Releases](https://github.com/lonewalkeryash/logsentry/releases) | nothing |
+| **Docker** | `docker build -t logsentry .` | Docker |
+| **Linux service** | `sudo ./deploy/install.sh` (see [Deploy](#deploy)) | Python 3.10+, systemd |
+| **From source** | `git clone https://github.com/lonewalkeryash/logsentry.git && cd logsentry && pip install -e ".[dev]"` | Python 3.10+ |
 
 If your shell says `logsentry: command not found` (pip's script folder isn't on `PATH`),
 use `python -m logsentry` instead. It takes the same arguments.
@@ -106,12 +119,128 @@ logsentry scan samples/access.log -o markdown
 # only high+ findings, and fail a CI job if anything critical shows up
 logsentry scan app.log --min-severity high --fail-on critical
 
-# list rules / add your own
-logsentry rules
+# list rules (with -v: what each one detects) / add your own
+logsentry rules -v
 logsentry scan auth.log --extra-rules ./my-rules/
+
+# follow logs live
+logsentry watch /var/log/auth.log --format auth
+logsentry watch /var/log/nginx/access.log --format web --jsonl alerts.jsonl
 ```
 
 Exit codes: `0` = clean (or below `--fail-on`), `1` = findings at/above `--fail-on`, `2` = error.
+
+## Auto-block (response)
+
+Add `--block` to `scan` or `watch` and LogSentry blocks the source IP of every
+**high or critical** attack at the host firewall.
+
+```bash
+# 1. preview: prints the firewall commands it WOULD run, changes nothing
+logsentry scan samples/auth.log samples/access.log samples/windows_security.jsonl --year 2026 --block
+
+# 2. enforce (root on Linux, an Administrator shell on Windows)
+sudo logsentry watch /var/log/auth.log --format auth --block --apply --allow 198.51.100.0/24
+
+# 3. review and undo
+sudo logsentry blocks
+sudo logsentry unblock 203.0.113.45
+sudo logsentry unblock --expired
+```
+
+```
+08:14:02 HIGH     LS-AUTH-001  SSH brute force [203.0.113.45]  6 event(s) ...
+[block]   203.0.113.45 blocked via iptables for LS-AUTH-001 SSH brute force (expires 2026-11-16 08:14)
+```
+
+Replaying the sample SSH attack through `watch`, the brute-force rule fires at
+the 6th failed password. With `--apply` the attacker is cut off there, 9 guesses
+before the one that actually got in.
+
+| Firewall | Option | What it does |
+|---|---|---|
+| iptables / ip6tables (Linux) | `--firewall iptables` | adds `-s <ip> -j DROP` to a dedicated `LOGSENTRY` chain hooked into `INPUT` |
+| Windows Defender Firewall | `--firewall netsh` | adds an inbound block rule named `LogSentry-block-<ip>` |
+
+The default (`auto`) picks `netsh` on Windows and `iptables` on Linux. iptables
+rules also apply on hosts that use ufw.
+
+**Guard rails.** An auto-blocker that can be tricked into blocking the wrong
+thing is a liability, so:
+
+- **Preview by default.** Nothing changes without `--apply`.
+- **Only real attacker IPs.** A rule must group by `src_ip`, and the value must
+  parse as an IP address. Log text is attacker-controlled, so anything else
+  (`1.2.3.4; rm -rf /`, `-j ACCEPT`) is refused, and commands run as argument
+  lists, never through a shell.
+- **Never locks you out.** Loopback, private (RFC 1918, ULA), link-local and
+  CGNAT ranges, the IP of the SSH session you're running it from, and anything
+  passed with `--allow` are never blocked.
+- **Bounded.** Blocks expire after `--block-ttl` (default `24h`; `0` = never),
+  and at most `--max-blocks` (default 50) can be active at once.
+- **Tunable.** `--block-severity critical` blocks only confirmed compromises
+  (e.g. a successful login after brute force).
+- **Auditable.** Every block is recorded in a JSON state file
+  (`--state`, `$LOGSENTRY_STATE`, default `~/.logsentry/blocks.json`).
+
+> Behind a reverse proxy, CDN or load balancer, web logs show the proxy's IP,
+> not the visitor's. Add the proxy's range with `--allow`, or don't auto-block
+> from web logs.
+
+## Deploy
+
+### Linux server (systemd)
+
+```bash
+git clone https://github.com/lonewalkeryash/logsentry.git
+cd logsentry
+sudo ./deploy/install.sh
+journalctl -u logsentry -f          # live alerts
+```
+
+The installer creates a virtualenv in `/opt/logsentry` with all dependencies,
+installs the [`logsentry.service`](deploy/logsentry.service) unit and starts it.
+It starts in **preview mode**. Edit `/etc/logsentry/logsentry.env`, add
+`--apply` (and `--allow <your IP>`), then `sudo systemctl restart logsentry`.
+The service runs with only the capabilities it needs (`CAP_NET_ADMIN`,
+`CAP_NET_RAW`, `CAP_DAC_READ_SEARCH`) and a read-only filesystem.
+`sudo ./deploy/install.sh --uninstall` removes it and its firewall chain.
+
+### Docker
+
+```bash
+docker build -t logsentry .
+docker run --rm -v "$PWD/samples:/logs:ro" logsentry scan /logs/auth.log --year 2026   # detection only
+docker compose up -d                                                                   # live SSH protection
+```
+
+Detection needs no privileges. To block, the container must share the host's
+network namespace and have `NET_ADMIN`; [`docker-compose.yml`](docker-compose.yml)
+sets that up in preview mode (add `--apply` to the command to enforce).
+
+### Windows
+
+Download `logsentry-windows-x86_64.exe` from [Releases](https://github.com/lonewalkeryash/logsentry/releases)
+(no Python needed), export events as shown below, and run from an
+**Administrator** PowerShell:
+
+```powershell
+.\logsentry-windows-x86_64.exe scan security.jsonl --block            # preview
+.\logsentry-windows-x86_64.exe scan security.jsonl --block --apply    # add firewall rules
+.\logsentry-windows-x86_64.exe unblock 203.0.113.200
+```
+
+Run it from Task Scheduler every few minutes for continuous protection.
+
+### Build the standalone executable yourself
+
+```bash
+pip install . pyinstaller
+bash packaging/build_binary.sh      # -> dist/logsentry (or dist/logsentry.exe)
+```
+
+Pushing a `v*` tag runs [`release.yml`](.github/workflows/release.yml), which builds,
+tests and attaches the Linux and Windows executables to a GitHub release.
 
 ### Exporting Windows events
 
@@ -129,8 +258,10 @@ Get-WinEvent -LogName Security -MaxEvents 5000 | ForEach-Object {
  log files ──► parsers ──► normalised Events ──► detection engine ──► Alerts ──► text / JSON / Markdown
                (auth,        {timestamp,          ▲                               + exit code
                 web,          source, fields})    │
-                windows)                      YAML rules
-                                         (pattern / threshold / sequence)
+                windows)                      YAML rules           │
+                                         (pattern / threshold / sequence)   ▼
+                                                                  responder ──► firewall block
+                                                              (allowlist, TTL, cap)  (iptables / netsh)
 ```
 
 1. **Parsing.** Each parser turns a raw line into an `Event` with a timestamp, a source
@@ -146,6 +277,10 @@ Get-WinEvent -LogName Security -MaxEvents 5000 | ForEach-Object {
      reached its `min_count` inside the window before the final step happened.
 4. **Reporting.** Alerts are sorted by severity, then by time. Each one carries its first/last
    seen times, an event count, ATT&CK IDs and the original log lines as evidence.
+5. **Live mode.** `watch` polls each file for new lines, keeps a rolling buffer as long as the
+   longest rule window, re-runs the engine on it and prints only alerts from new bursts.
+6. **Response.** The responder turns eligible alerts into firewall blocks after the checks
+   listed under [Auto-block](#auto-block-response).
 
 ### Example: how the "compromised account" rule fires
 
@@ -195,7 +330,7 @@ mix normal traffic with planted attacks. All IPs come from the RFC 5737
 documentation ranges and every user and host name is made up.
 
 ```bash
-pytest -v                          # 67 tests: parsers, engine logic, end-to-end on the samples
+pytest -v                          # 101 tests: parsers, engine, live watch, auto-block, end-to-end
 python scripts/generate_samples.py # regenerate the samples
 python scripts/benchmark.py        # throughput on a 200k-line synthetic auth log
 ```
@@ -208,15 +343,20 @@ Benchmark on a laptop (Python 3.14, Windows 11): 200,000 lines parsed and checke
 ## Roadmap
 
 - [ ] Sigma rule import
-- [ ] Live tail mode (`logsentry watch /var/log/auth.log`)
+- [x] Live tail mode (`logsentry watch /var/log/auth.log`)
+- [x] Automatic IP blocking (iptables / Windows Firewall)
+- [ ] nftables and cloud firewall (AWS security group, Cloudflare) backends
+- [ ] Live Windows event subscription instead of JSON exports
 - [ ] GeoIP / threat-intel enrichment for source IPs
 - [ ] Syslog / journald JSON input
 - [ ] HTML dashboard report
 
 ## Disclaimer
 
-LogSentry is a defensive, educational tool for analysing logs **you own or are
-authorised to review**. It does not scan, probe or attack anything.
+LogSentry is a defensive tool for analysing logs **you own or are authorised
+to review** and protecting systems you administer. It does not scan, probe or
+attack anything. Test auto-block in preview mode first, and always allowlist
+the addresses you manage the server from.
 
 ## License
 

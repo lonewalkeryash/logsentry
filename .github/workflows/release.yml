@@ -1,0 +1,52 @@
+name: Release
+
+# Push a tag like v0.2.0 to publish a GitHub release with standalone
+# executables for Linux and Windows attached.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  create:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: gh release create "$GITHUB_REF_NAME" --title "LogSentry $GITHUB_REF_NAME" --generate-notes --verify-tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+  binaries:
+    needs: create
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            asset: logsentry-linux-x86_64
+            built: dist/logsentry
+          - os: windows-latest
+            asset: logsentry-windows-x86_64.exe
+            built: dist/logsentry.exe
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: pip install . pyinstaller
+      - run: bash packaging/build_binary.sh
+        shell: bash
+      - name: Smoke-test and upload
+        shell: bash
+        run: |
+          set +e
+          ./dist/logsentry scan samples/auth.log samples/access.log samples/windows_security.jsonl --year 2026 --fail-on critical
+          code=$?
+          set -e
+          test "$code" -eq 1
+          mv "${{ matrix.built }}" "dist/${{ matrix.asset }}"
+          gh release upload "$GITHUB_REF_NAME" "dist/${{ matrix.asset }}" --clobber
+        env:
+          GH_TOKEN: ${{ github.token }}
