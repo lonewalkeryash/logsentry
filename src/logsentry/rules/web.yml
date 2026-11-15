@@ -1,0 +1,89 @@
+# Web server access log detections (Apache / Nginx combined format)
+id: LS-WEB-001
+title: SQL injection attempt
+description: Request URL contains common SQL injection payloads.
+severity: high
+mitre: [T1190]
+source: web
+type: pattern
+match:
+  url_decoded: {regex: "(union(\\s|\\+)+(all(\\s|\\+)+)?select|'\\s*or\\s*'?\\d+'?\\s*=\\s*'?\\d+|\\bor\\s+1\\s*=\\s*1|sleep\\(\\d+\\)|benchmark\\(|information_schema|'\\s*--|;\\s*drop\\s+table)"}
+group_by: src_ip
+window: 10m
+---
+id: LS-WEB-002
+title: Path traversal / local file inclusion
+description: Request tries to escape the web root to read system files.
+severity: high
+mitre: [T1190, T1083]
+source: web
+type: pattern
+match:
+  url_decoded: {regex: '(\.\./|\.\.\\|/etc/passwd|/etc/shadow|win\.ini|boot\.ini|php://filter)'}
+group_by: src_ip
+window: 10m
+---
+id: LS-WEB-003
+title: Cross-site scripting (XSS) attempt
+description: Request contains script injection payloads.
+severity: medium
+mitre: [T1059.007]
+source: web
+type: pattern
+match:
+  url_decoded: {regex: '(<script|javascript:|onerror\s*=|onload\s*=|<svg[^>]*on\w+=|alert\()'}
+group_by: src_ip
+window: 10m
+---
+id: LS-WEB-004
+title: Known vulnerability scanner
+description: User-Agent matches an automated attack or recon tool.
+severity: medium
+mitre: [T1595.002]
+source: web
+type: pattern
+match:
+  user_agent: {regex: '(sqlmap|nikto|nmap|masscan|gobuster|dirbuster|dirb|wpscan|nuclei|hydra|zgrab|acunetix|nessus)'}
+group_by: src_ip
+window: 30m
+---
+id: LS-WEB-005
+title: Directory / content brute forcing
+description: One IP produced a burst of 404 responses - typical of gobuster/dirb style enumeration.
+severity: medium
+mitre: [T1595.003]
+source: web
+type: threshold
+match:
+  status: 404
+group_by: src_ip
+threshold: 20
+window: 1m
+---
+id: LS-WEB-006
+title: Possible web shell access
+description: Request to a known web-shell name or with a command execution parameter.
+severity: critical
+mitre: [T1505.003]
+source: web
+type: pattern
+match:
+  url_decoded: {regex: '(\b(cmd|exec|command|execute)=|shell\.php|c99\.php|r57\.php|b374k|wso\.php)'}
+  status: {lt: 400}
+group_by: src_ip
+window: 30m
+---
+id: LS-WEB-007
+title: Web login brute force
+description: Many failed POSTs to a login page from one IP.
+severity: high
+mitre: [T1110]
+source: web
+type: threshold
+match:
+  method: POST
+  url: {regex: '(login|signin|wp-login\.php|auth)'}
+  status: [401, 403]
+group_by: src_ip
+threshold: 10
+window: 5m

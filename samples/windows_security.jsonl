@@ -1,0 +1,50 @@
+{"TimeCreated": "2026-11-14T01:45:00Z", "EventID": 4625, "Computer": "WS-FIN-07", "TargetUserName": "Administrator", "IpAddress": "203.0.113.200", "LogonType": 10}
+{"TimeCreated": "2026-11-14T01:45:05Z", "EventID": 4625, "Computer": "WS-FIN-07", "TargetUserName": "Administrator", "IpAddress": "203.0.113.200", "LogonType": 10}
+{"TimeCreated": "2026-11-14T01:45:10Z", "EventID": 4625, "Computer": "WS-FIN-07", "TargetUserName": "Administrator", "IpAddress": "203.0.113.200", "LogonType": 10}
+{"TimeCreated": "2026-11-14T01:45:15Z", "EventID": 4625, "Computer": "WS-FIN-07", "TargetUserName": "Administrator", "IpAddress": "203.0.113.200", "LogonType": 10}
+{"TimeCreated": "2026-11-14T01:45:20Z", "EventID": 4625, "Computer": "WS-FIN-07", "TargetUserName": "Administrator", "IpAddress": "203.0.113.200", "LogonType": 10}
+{"TimeCreated": "2026-11-14T01:45:25Z", "EventID": 4625, "Computer": "WS-FIN-07", "TargetUserName": "Administrator", "IpAddress": "203.0.113.200", "LogonType": 10}
+{"TimeCreated": "2026-11-14T01:45:30Z", "EventID": 4625, "Computer": "WS-FIN-07", "TargetUserName": "Administrator", "IpAddress": "203.0.113.200", "LogonType": 10}
+{"TimeCreated": "2026-11-14T01:45:35Z", "EventID": 4625, "Computer": "WS-FIN-07", "TargetUserName": "Administrator", "IpAddress": "203.0.113.200", "LogonType": 10}
+{"TimeCreated": "2026-11-14T01:46:00Z", "EventID": 4624, "Computer": "WS-FIN-07", "TargetUserName": "Administrator", "IpAddress": "203.0.113.200", "LogonType": 10}
+{"TimeCreated": "2026-11-14T01:48:00Z", "EventID": 4688, "Computer": "WS-FIN-07", "SubjectUserName": "Administrator", "NewProcessName": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", "CommandLine": "powershell.exe -nop -w hidden -enc SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkA"}
+{"TimeCreated": "2026-11-14T01:49:00Z", "EventID": 4720, "Computer": "WS-FIN-07", "SubjectUserName": "Administrator", "TargetUserName": "svc_backup"}
+{"TimeCreated": "2026-11-14T01:49:10Z", "EventID": 4732, "Computer": "WS-FIN-07", "SubjectUserName": "Administrator", "TargetUserName": "svc_backup", "TargetGroupName": "Administrators"}
+{"TimeCreated": "2026-11-14T01:51:00Z", "EventID": 7045, "Computer": "WS-FIN-07", "ServiceName": "WinUpdateHelper"}
+{"TimeCreated": "2026-11-14T01:55:00Z", "EventID": 1102, "Computer": "WS-FIN-07", "SubjectUserName": "Administrator"}
+{"TimeCreated": "2026-11-14T09:04:50Z", "EventID": 4624, "Computer": "WS-FIN-07", "TargetUserName": "bob", "IpAddress": "192.0.2.14", "LogonType": 3}
+{"TimeCreated": "2026-11-14T09:08:28Z", "EventID": 4624, "Computer": "WS-FIN-07", "TargetUserName": "alice", "IpAddress": "192.0.2.11", "LogonType": 3}
+{"TimeCreated": "2026-11-14T09:11:24Z", "EventID": 4624, "Computer": "WS-FIN-07", "TargetUserName": "alice", "IpAddress": "192.0.2.14", "LogonType": 3}
+{"TimeCreated": "2026-11-14T09:40:43Z", "EventID": 4624, "Computer": "WS-FIN-07", "TargetUserName": "alice", "IpAddress": "192.0.2.11", "LogonType": 3}
+{"TimeCreated": "2026-11-14T09:41:24Z", "EventID": 4624, "Computer": "WS-FIN-07", "TargetUserName": "bob", "IpAddress": "192.0.2.40", "LogonType": 3}
+{"TimeCreated": "2026-11-14T09:54:29Z", "EventID": 4624, "Computer": "WS-FIN-07", "TargetUserName": "carol", "IpAddress": "192.0.2.10", "LogonType": 3}
+{"TimeCreated": "2026-11-14T10:10:00Z", "EventID": 4625, "Computer": "WS-FIN-07", "TargetUserName": "jsmith", "IpAddress": "198.51.100.66", "LogonType": 3}
+{"TimeCreated": "2026-11-14T10:10:30Z", "EventID": 4625, "Computer": "WS-FIN-07", "TargetUserName": "mlee", "IpAddress": "198.51.100.66", "LogonType": 3}
+{"TimeCreated": "2026-11-14T10:11:00Z", "EventID": 4625, "Computer": "WS-FIN-07", "TargetUserName": "akumar", "IpAddress": "198.51.100.66", "LogonType": 3}
+{"TimeCreated": "2026-11-14T10:11:30Z", "EventID": 4625, "Computer": "WS-FIN-07", "TargetUserName": "tgarcia", "IpAddress": "198.51.100.66", "LogonType": 3}
+{"TimeCreated": "2026-11-14T10:12:00Z", "EventID": 4625, "Computer": "WS-FIN-07", "TargetUserName": "pwhite", "IpAddress": "198.51.100.66", "LogonType": 3}
+{"TimeCreated": "2026-11-14T10:12:30Z", "EventID": 4625, "Computer": "WS-FIN-07", "TargetUserName": "hr.admin", "IpAddress": "198.51.100.66", "LogonType": 3}
+{"TimeCreated": "2026-11-14T10:19:59Z", "EventID": 4624, "Computer": "WS-FIN-07", "TargetUserName": "bob", "IpAddress": "192.0.2.22", "LogonType": 3}
+{"TimeCreated": "2026-11-14T10:21:51Z", "EventID": 4624, "Computer": "WS-FIN-07", "TargetUserName": "bob", "IpAddress": "192.0.2.10", "LogonType": 3}
+{"TimeCreated": "2026-11-14T10:50:22Z", "EventID": 4624, "Computer": "WS-FIN-07", "TargetUserName": "alice", "IpAddress": "192.0.2.40", "LogonType": 3}
+{"TimeCreated": "2026-11-14T11:06:05Z", "EventID": 4624, "Computer": "WS-FIN-07", "TargetUserName": "bob", "IpAddress": "192.0.2.40", "LogonType": 3}
+{"TimeCreated": "2026-11-14T11:21:36Z", "EventID": 4624, "Computer": "WS-FIN-07", "TargetUserName": "bob", "IpAddress": "192.0.2.10", "LogonType": 3}
+{"TimeCreated": "2026-11-14T11:28:24Z", "EventID": 4624, "Computer": "WS-FIN-07", "TargetUserName": "carol", "IpAddress": "192.0.2.31", "LogonType": 3}
+{"TimeCreated": "2026-11-14T11:59:41Z", "EventID": 4624, "Computer": "WS-FIN-07", "TargetUserName": "dave", "IpAddress": "192.0.2.14", "LogonType": 3}
+{"TimeCreated": "2026-11-14T12:44:24Z", "EventID": 4624, "Computer": "WS-FIN-07", "TargetUserName": "carol", "IpAddress": "192.0.2.10", "LogonType": 3}
+{"TimeCreated": "2026-11-14T12:47:25Z", "EventID": 4624, "Computer": "WS-FIN-07", "TargetUserName": "dave", "IpAddress": "192.0.2.11", "LogonType": 3}
+{"TimeCreated": "2026-11-14T14:53:59Z", "EventID": 4624, "Computer": "WS-FIN-07", "TargetUserName": "dave", "IpAddress": "192.0.2.10", "LogonType": 3}
+{"TimeCreated": "2026-11-14T14:57:54Z", "EventID": 4624, "Computer": "WS-FIN-07", "TargetUserName": "alice", "IpAddress": "192.0.2.40", "LogonType": 3}
+{"TimeCreated": "2026-11-14T15:02:44Z", "EventID": 4624, "Computer": "WS-FIN-07", "TargetUserName": "alice", "IpAddress": "192.0.2.31", "LogonType": 3}
+{"TimeCreated": "2026-11-14T15:22:58Z", "EventID": 4624, "Computer": "WS-FIN-07", "TargetUserName": "carol", "IpAddress": "192.0.2.40", "LogonType": 3}
+{"TimeCreated": "2026-11-14T15:25:11Z", "EventID": 4624, "Computer": "WS-FIN-07", "TargetUserName": "alice", "IpAddress": "192.0.2.10", "LogonType": 3}
+{"TimeCreated": "2026-11-14T15:31:41Z", "EventID": 4624, "Computer": "WS-FIN-07", "TargetUserName": "dave", "IpAddress": "192.0.2.22", "LogonType": 3}
+{"TimeCreated": "2026-11-14T16:39:01Z", "EventID": 4624, "Computer": "WS-FIN-07", "TargetUserName": "carol", "IpAddress": "192.0.2.22", "LogonType": 3}
+{"TimeCreated": "2026-11-14T16:44:10Z", "EventID": 4624, "Computer": "WS-FIN-07", "TargetUserName": "bob", "IpAddress": "192.0.2.10", "LogonType": 3}
+{"TimeCreated": "2026-11-14T16:56:53Z", "EventID": 4624, "Computer": "WS-FIN-07", "TargetUserName": "bob", "IpAddress": "192.0.2.40", "LogonType": 3}
+{"TimeCreated": "2026-11-14T17:47:04Z", "EventID": 4624, "Computer": "WS-FIN-07", "TargetUserName": "carol", "IpAddress": "192.0.2.10", "LogonType": 3}
+{"TimeCreated": "2026-11-14T18:06:25Z", "EventID": 4624, "Computer": "WS-FIN-07", "TargetUserName": "dave", "IpAddress": "192.0.2.10", "LogonType": 3}
+{"TimeCreated": "2026-11-14T18:12:33Z", "EventID": 4624, "Computer": "WS-FIN-07", "TargetUserName": "carol", "IpAddress": "192.0.2.40", "LogonType": 3}
+{"TimeCreated": "2026-11-14T18:27:17Z", "EventID": 4624, "Computer": "WS-FIN-07", "TargetUserName": "carol", "IpAddress": "192.0.2.10", "LogonType": 3}
+{"TimeCreated": "2026-11-14T18:30:05Z", "EventID": 4624, "Computer": "WS-FIN-07", "TargetUserName": "alice", "IpAddress": "192.0.2.10", "LogonType": 3}
+{"TimeCreated": "2026-11-14T18:51:43Z", "EventID": 4624, "Computer": "WS-FIN-07", "TargetUserName": "dave", "IpAddress": "192.0.2.14", "LogonType": 3}

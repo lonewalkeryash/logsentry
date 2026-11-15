@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "logsentry"
+version = "0.1.0"
+description = "Rule-based log threat detection: parse auth, web and Windows logs and flag attacks mapped to MITRE ATT&CK."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = ["PyYAML>=6.0"]
+keywords = ["security", "blue-team", "detection", "siem", "mitre-attack", "log-analysis"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Topic :: Security",
+    "Environment :: Console",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7"]
+
+[project.scripts]
+logsentry = "logsentry.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+logsentry = ["rules/*.yml"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

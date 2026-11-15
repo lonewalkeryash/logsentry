@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: ["3.10", "3.12", "3.14"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install -e ".[dev]"
+      - run: pytest -v
+      - name: Scan the sample logs
+        run: logsentry scan samples/auth.log samples/access.log samples/windows_security.jsonl --year 2026 --output markdown
+
+  # Example of using LogSentry as a CI security gate: fails the job if a
+  # critical finding exists. The samples contain planted attacks, so this
+  # job is expected to report exit code 1 and is marked continue-on-error.
+  gate-demo:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install .
+      - run: logsentry scan samples/*.log samples/*.jsonl --year 2026 --fail-on critical

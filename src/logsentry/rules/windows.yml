@@ -1,0 +1,93 @@
+# Windows Security / System event log detections (JSON-lines export)
+id: LS-WIN-001
+title: Windows logon brute force
+description: Many failed logons (4625) from one source IP.
+severity: high
+mitre: [T1110.001]
+source: windows
+type: threshold
+match:
+  event_id: 4625
+group_by: src_ip
+threshold: 5
+window: 5m
+---
+id: LS-WIN-002
+title: Windows password spraying
+description: Failed logons (4625) against many different accounts from one IP.
+severity: high
+mitre: [T1110.003]
+source: windows
+type: threshold
+match:
+  event_id: 4625
+group_by: src_ip
+distinct: user
+threshold: 5
+window: 10m
+---
+id: LS-WIN-003
+title: Successful logon after brute force
+description: Failed logons followed by a successful logon (4624) from the same IP.
+severity: critical
+mitre: [T1110, T1078]
+source: windows
+type: sequence
+group_by: src_ip
+window: 15m
+steps:
+  - match: {event_id: 4625}
+    min_count: 5
+  - match: {event_id: 4624}
+---
+id: LS-WIN-004
+title: Security event log cleared
+description: Event 1102 - someone cleared the Security log, a classic anti-forensics step.
+severity: critical
+mitre: [T1070.001]
+source: windows
+type: pattern
+match:
+  event_id: 1102
+---
+id: LS-WIN-005
+title: New user account created
+description: Event 4720 - a user account was created.
+severity: medium
+mitre: [T1136.001]
+source: windows
+type: pattern
+match:
+  event_id: 4720
+---
+id: LS-WIN-006
+title: Account added to administrators
+description: Account added to a privileged group (4732/4728).
+severity: high
+mitre: [T1098]
+source: windows
+type: pattern
+match:
+  action: group_add
+  group: {regex: '(administrators|domain admins|enterprise admins|remote desktop users)'}
+---
+id: LS-WIN-007
+title: Suspicious PowerShell execution
+description: Encoded or download-and-run PowerShell command line (4688).
+severity: high
+mitre: [T1059.001, T1027]
+source: windows
+type: pattern
+match:
+  event_id: 4688
+  command: {regex: '(-enc(odedcommand)?\s|downloadstring|downloadfile|iex\s*\(|invoke-expression|-nop\s.*-w(indowstyle)?\s+hidden|frombase64string)'}
+---
+id: LS-WIN-008
+title: New service installed
+description: Event 7045 - a service was installed. Common for persistence and lateral movement (PsExec).
+severity: medium
+mitre: [T1543.003]
+source: windows
+type: pattern
+match:
+  event_id: 7045

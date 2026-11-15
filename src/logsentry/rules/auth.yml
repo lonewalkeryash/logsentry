@@ -1,0 +1,85 @@
+# Linux auth.log detections (sshd, sudo, useradd/usermod)
+id: LS-AUTH-001
+title: SSH brute force
+description: Many failed SSH logins from one IP in a short window.
+severity: high
+mitre: [T1110.001]
+source: auth
+type: threshold
+match:
+  action: ssh_failed
+group_by: src_ip
+threshold: 5
+window: 5m
+---
+id: LS-AUTH-002
+title: SSH password spraying
+description: One IP tried passwords against many different usernames.
+severity: high
+mitre: [T1110.003]
+source: auth
+type: threshold
+match:
+  action: [ssh_failed, ssh_invalid_user]
+group_by: src_ip
+distinct: user
+threshold: 4
+window: 10m
+---
+id: LS-AUTH-003
+title: Successful SSH login after brute force
+description: An IP that just failed many logins then logged in successfully - likely a compromised account.
+severity: critical
+mitre: [T1110, T1078]
+source: auth
+type: sequence
+group_by: src_ip
+window: 15m
+steps:
+  - match: {action: ssh_failed}
+    min_count: 5
+  - match: {action: ssh_success}
+---
+id: LS-AUTH-004
+title: Direct root login over SSH
+description: Root logged in directly over SSH. Root SSH login should be disabled (PermitRootLogin no).
+severity: high
+mitre: [T1078.003]
+source: auth
+type: pattern
+match:
+  action: ssh_success
+  user: root
+---
+id: LS-AUTH-005
+title: Sudo used to spawn a root shell
+description: A user ran an interactive shell as root through sudo.
+severity: medium
+mitre: [T1548.003]
+source: auth
+type: pattern
+match:
+  action: sudo
+  target_user: root
+  command: {regex: '(^|/)(bash|sh|zsh|dash|su)(\s|$)'}
+---
+id: LS-AUTH-006
+title: New local user account created
+description: A new local account was added. Attackers create accounts for persistence.
+severity: medium
+mitre: [T1136.001]
+source: auth
+type: pattern
+match:
+  action: user_created
+---
+id: LS-AUTH-007
+title: User added to privileged group
+description: An account was added to sudo/wheel/admin/root.
+severity: high
+mitre: [T1098]
+source: auth
+type: pattern
+match:
+  action: group_add
+  group: [sudo, wheel, admin, root, adm]
