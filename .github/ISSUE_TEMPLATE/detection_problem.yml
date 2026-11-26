@@ -1,0 +1,34 @@
+name: False positive / missed detection
+description: A rule fired on normal activity, or an attack was not detected
+title: "Detection: "
+labels: ["detection quality"]
+body:
+  - type: markdown
+    attributes:
+      value: Use synthetic data only. Replace real IP addresses, hostnames and usernames before pasting.
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What happened?
+      options:
+        - A rule fired on normal activity (false positive)
+        - An attack was not detected (missed detection)
+    validations:
+      required: true
+  - type: input
+    id: rule
+    attributes:
+      label: Rule id, if known
+      placeholder: LS-AUTH-001
+  - type: textarea
+    id: lines
+    attributes:
+      label: Log lines that reproduce it (anonymised)
+      render: text
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: LogSentry version
+      description: Output of `logsentry --version`

@@ -18,6 +18,32 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
 
+  # Publish to PyPI with Trusted Publishing (no API token stored in the repo).
+  # One-time setup on pypi.org: Your projects -> Publishing -> add a pending
+  # publisher with owner "lonewalkeryash", repository "logsentry", workflow
+  # "release.yml" and environment "pypi". Until that is done this job fails
+  # and the GitHub release and binaries are still published.
+  pypi:
+    needs: create
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: pip install build twine
+      - name: Tag must match the package version
+        run: |
+          version=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])")
+          test "v$version" = "$GITHUB_REF_NAME" || { echo "tag $GITHUB_REF_NAME does not match version $version"; exit 1; }
+      - run: python -m build
+      - run: twine check --strict dist/*
+      - uses: pypa/gh-action-pypi-publish@release/v1
+
   binaries:
     needs: create
     runs-on: ${{ matrix.os }}

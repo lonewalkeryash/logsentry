@@ -5,6 +5,8 @@ from pathlib import Path
 import pytest
 
 from logsentry.blocker import BlockState, IptablesBackend, Responder
+from logsentry.engine import detect
+from logsentry.parsers import parse_file
 from logsentry.rules import load_rules
 from logsentry.watch import Tail, Watcher
 
@@ -87,7 +89,10 @@ def test_watch_from_start_matches_batch_scan(tmp_path):
     log.write_text("".join(SAMPLE))
     w, seen = watcher(log, from_start=True)
     w.poll()
-    assert len(seen) == 8                        # same 8 alerts as `logsentry scan samples/auth.log`
+    # same alerts as `logsentry scan samples/auth.log`; compared with a live
+    # batch scan so adding a rule and its sample lines needs no change here
+    batch = detect(parse_file(Path("samples/auth.log"), "auth", 2026)[1], load_rules())
+    assert sorted((a.rule_id, a.group) for a in seen) == sorted((a.rule_id, a.group) for a in batch)
 
 
 def test_watch_blocks_attacker(tmp_path):

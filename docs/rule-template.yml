@@ -1,0 +1,48 @@
+# Rule template. Copy one block into the right file under src/logsentry/rules/
+# (auth.yml, web.yml or windows.yml), separated from the rule above by "---".
+# Delete the comments and the blocks you don't use.
+#
+# Allowed keys: id, title, description, severity, mitre, source, type,
+#               match, group_by, threshold, distinct, window, steps
+# Any other key fails the tests, so a typo cannot slip through.
+
+# ---- pattern: one matching event is enough -------------------------------
+id: LS-WEB-000                # LS-AUTH-nnn | LS-WEB-nnn | LS-WIN-nnn, next free number
+title: Short name of the attack
+description: One sentence saying what this detects and why it matters.
+severity: medium              # low | medium | high | critical
+mitre: [T1190]                # ATT&CK technique ids, e.g. T1110 or T1110.001
+source: web                   # auth | web | windows
+type: pattern
+match:
+  url_decoded: {regex: 'union\s+select'}
+---
+# ---- threshold: N events (or N distinct values) per group in a window ----
+id: LS-AUTH-000
+title: Short name of the attack
+description: One sentence saying what this detects and why it matters.
+severity: high
+mitre: [T1110.001]
+source: auth
+type: threshold
+match:
+  action: ssh_failed
+group_by: src_ip              # needed for auto-block to know which IP to block
+threshold: 5
+window: 5m                    # 30s, 5m, 1h, 1d
+# distinct: user              # optional: count distinct users instead of events
+---
+# ---- sequence: ordered steps from the same group inside a window ---------
+id: LS-WIN-000
+title: Short name of the attack
+description: One sentence saying what this detects and why it matters.
+severity: critical
+mitre: [T1110, T1078]
+source: windows
+type: sequence
+group_by: src_ip
+window: 15m
+steps:
+  - match: {action: logon_failed}
+    min_count: 5
+  - match: {action: logon_success}

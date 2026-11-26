@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- Contributor guide, rule template, issue and pull request templates, security policy.
+- `tests/test_rule_pack.py` checks every built-in rule automatically (no misspelt keys,
+  id matches source, description, MITRE ids, fires on the samples).
+- Packaging ready for PyPI: project URLs, classifiers, SPDX licence field, and a
+  Trusted Publishing job in the release workflow.
+
 ## 0.2.0
 
 - **Auto-block**: `--block` on `scan` and `watch` blocks the source IP of high/critical
