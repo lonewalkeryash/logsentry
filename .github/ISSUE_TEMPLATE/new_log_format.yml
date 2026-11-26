@@ -1,0 +1,39 @@
+name: New log format
+description: Propose support for a log format LogSentry cannot read yet
+title: "Format: "
+labels: ["new format"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A new format needs a parser, samples and tests, so it is a larger change than a rule.
+        See "Add a log format" in CONTRIBUTING.md. Use synthetic data only.
+  - type: input
+    id: format
+    attributes:
+      label: Which log format?
+      placeholder: journald JSON, AWS CloudTrail, Nginx error log, ...
+    validations:
+      required: true
+  - type: textarea
+    id: lines
+    attributes:
+      label: Example lines (made up)
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: fields
+    attributes:
+      label: Fields rules should be able to match on
+      description: For example action, src_ip, user.
+  - type: textarea
+    id: attacks
+    attributes:
+      label: Which attacks would this let LogSentry detect?
+  - type: checkboxes
+    id: work
+    attributes:
+      label: Contribution
+      options:
+        - label: I would like to work on this myself

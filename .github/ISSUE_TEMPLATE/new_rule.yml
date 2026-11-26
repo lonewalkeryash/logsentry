@@ -1,0 +1,44 @@
+name: New detection rule
+description: Propose a rule for a log format LogSentry already reads (auth, web, windows)
+title: "Rule: "
+labels: ["new rule"]
+body:
+  - type: markdown
+    attributes:
+      value: Use synthetic data only. Never paste real logs, IP addresses, hostnames or usernames.
+  - type: input
+    id: attack
+    attributes:
+      label: What attack or behaviour should be detected?
+    validations:
+      required: true
+  - type: dropdown
+    id: source
+    attributes:
+      label: Log source
+      options: [auth, web, windows]
+    validations:
+      required: true
+  - type: input
+    id: mitre
+    attributes:
+      label: MITRE ATT&CK technique
+      placeholder: T1110.001
+  - type: textarea
+    id: lines
+    attributes:
+      label: Example log lines (made up)
+      description: Lines that should trigger the rule, and if you can, similar lines that should not.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: noise
+    attributes:
+      label: What normal activity could trigger it by mistake?
+  - type: checkboxes
+    id: work
+    attributes:
+      label: Contribution
+      options:
+        - label: I would like to write this rule myself

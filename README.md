@@ -58,7 +58,7 @@ brute force → account compromise → root shell → backdoor user → added to
 - **Easy deploy**: `pip install`, a standalone executable with no Python needed, a Docker image, or a
   one-command systemd service installer.
 - **One dependency** (PyYAML); the rest is plain standard-library Python.
-- **106 unit and end-to-end tests**, run on Linux and Windows through GitHub Actions. CI also installs the
+- **200+ unit, rule-quality and end-to-end tests**, run on Linux and Windows through GitHub Actions. CI also installs the
   service on a real Linux runner and checks that iptables actually blocks the attackers.
 
 ## Detection coverage
@@ -204,7 +204,7 @@ journalctl -u logsentry -f          # live alerts
 ```
 
 The installer creates a virtualenv in `/opt/logsentry` with all dependencies,
-installs the [`logsentry.service`](deploy/logsentry.service) unit and starts it.
+installs the [`logsentry.service`](https://github.com/lonewalkeryash/logsentry/blob/main/deploy/logsentry.service) unit and starts it.
 It starts in **preview mode**. Edit `/etc/logsentry/logsentry.env`, add
 `--apply` (and `--allow <your IP>`), then `sudo systemctl restart logsentry`.
 The service runs with only the capabilities it needs (`CAP_NET_ADMIN`,
@@ -220,7 +220,7 @@ docker compose up -d                                                            
 ```
 
 Detection needs no privileges. To block, the container must share the host's
-network namespace and have `NET_ADMIN`; [`docker-compose.yml`](docker-compose.yml)
+network namespace and have `NET_ADMIN`; [`docker-compose.yml`](https://github.com/lonewalkeryash/logsentry/blob/main/docker-compose.yml)
 sets that up in preview mode (add `--apply` to the command to enforce).
 
 > Blocks go in the host's `INPUT` chain, which protects services running on the
@@ -248,7 +248,7 @@ pip install . pyinstaller
 bash packaging/build_binary.sh      # -> dist/logsentry (or dist/logsentry.exe)
 ```
 
-Pushing a `v*` tag runs [`release.yml`](.github/workflows/release.yml), which builds,
+Pushing a `v*` tag runs [`release.yml`](https://github.com/lonewalkeryash/logsentry/blob/main/.github/workflows/release.yml), which builds,
 tests and attaches the Linux and Windows executables to a GitHub release.
 
 ### Exporting Windows events
@@ -332,6 +332,18 @@ match:
 Match operators: `field: value` (equals), `field: [a, b]` (any of), `{regex: ...}`
 (case-insensitive), `{gte|lte|gt|lt: n}`, `{exists: true}`. Every condition must match.
 
+## Contributing
+
+New detection rules are the easiest way to help: a rule is a few lines of YAML
+plus a few sample log lines, and the test suite checks it automatically. See
+[CONTRIBUTING.md](https://github.com/lonewalkeryash/logsentry/blob/main/CONTRIBUTING.md)
+for a 10-minute walkthrough and the
+[rule template](https://github.com/lonewalkeryash/logsentry/blob/main/docs/rule-template.yml).
+Issues labelled
+[`good first issue`](https://github.com/lonewalkeryash/logsentry/labels/good%20first%20issue)
+are a good place to start. To report a vulnerability in LogSentry itself, see
+[SECURITY.md](https://github.com/lonewalkeryash/logsentry/blob/main/SECURITY.md).
+
 ## Sample data and testing
 
 `samples/` contains **synthetic** logs made by `scripts/generate_samples.py`. They
@@ -339,7 +351,7 @@ mix normal traffic with planted attacks. All IPs come from the RFC 5737
 documentation ranges and every user and host name is made up.
 
 ```bash
-pytest -v                          # 106 tests: parsers, engine, live watch, auto-block, end-to-end
+pytest -v                          # parsers, engine, rule pack, live watch, auto-block, end-to-end
 python scripts/generate_samples.py # regenerate the samples
 python scripts/benchmark.py        # throughput on a 200k-line synthetic auth log
 ```

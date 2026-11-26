@@ -138,7 +138,8 @@ jobs:
         shell: bash
         run: |
           ./dist/logsentry --version
-          ./dist/logsentry rules | tail -n 1 | grep -q "22 rules loaded"
+          # Count-agnostic so a pull request that adds a rule does not fail here.
+          ./dist/logsentry rules | tail -n 1 | grep -Eq "^[0-9]+ rules loaded"
           set +e
           ./dist/logsentry scan samples/auth.log samples/access.log samples/windows_security.jsonl --year 2026 --fail-on critical
           code=$?
